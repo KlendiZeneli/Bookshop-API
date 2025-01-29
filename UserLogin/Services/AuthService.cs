@@ -29,7 +29,7 @@ public class AuthService
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
             // Generate confirmation URL (you need to provide the actual URL here)
-            var confirmationUrl = $"https://localhost:7221/Auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+            var confirmationUrl = $"https://localhost:7221/api/Auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
 
             // HTML body with a button
             var htmlBody = $@"
