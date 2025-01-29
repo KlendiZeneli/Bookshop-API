@@ -7,7 +7,7 @@ namespace UserLogin.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")] // Only authenticated users can access
+    //[Authorize(Roles = "Admin")] // Only authenticated users can access
     public class RoleController : ControllerBase
     {
         private readonly RoleService _roleService;

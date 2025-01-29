@@ -15,7 +15,7 @@ public class TokenService : ITokenService
 {
     private readonly IConfiguration _configuration;
 
-    public TokenService(IConfiguration configuration)
+    public TokenService(IConfiguration configuration)   
     {
         _configuration = configuration;
     }
@@ -35,7 +35,7 @@ public class TokenService : ITokenService
             issuer: _configuration["Jwt:Issuer"],
             audience: _configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddDays(1),
+            expires: DateTime.UtcNow.AddDays(1),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

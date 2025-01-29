@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
 using System.Threading.Tasks;
 using UserLogin.Data.Models;
 using UserLogin.Services;
@@ -28,15 +30,21 @@ public class AuthService
             // Generate email confirmation token
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-            // Generate confirmation URL (you need to provide the actual URL here)
-            var confirmationUrl = $"https://localhost:7221/Auth/confirm-email?userId={user.Id}&token={Uri.EscapeDataString(token)}";
+            // Encode token using Base64Url to prevent URL issues
+            var tokenBytes = Encoding.UTF8.GetBytes(token);
+            var encodedToken = WebEncoders.Base64UrlEncode(tokenBytes);
 
-            // HTML body with a button
+            // Generate confirmation URL
+            var confirmationUrl = $"https://localhost:7221/api/Auth/confirm-email?userId={user.Id}&token={encodedToken}";
+
+            // HTML body with a button and a direct link option
             var htmlBody = $@"
             <p>Please confirm your email by clicking the button below:</p>
             <a href='{confirmationUrl}' style='background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; border-radius: 5px;'>
                 Confirm Email
-            </a> ";
+            </a> 
+            <p>If the button doesn't work, you can also confirm your email by clicking the following link:</p>
+            <p><a href='{confirmationUrl}'>{confirmationUrl}</a></p>";
 
             // Send the confirmation email using the EmailService
             await _emailService.SendEmailAsync(user.Email, "Confirm your email", htmlBody, true);
@@ -44,6 +52,7 @@ public class AuthService
 
         return result;
     }
+
 
 
     public async Task<SignInResult> LoginAsync(LoginModel model)
@@ -58,9 +67,23 @@ public class AuthService
     public async Task<IdentityResult> ConfirmEmailAsync(string userId, string token)
     {
         var user = await _userManager.FindByIdAsync(userId);
+        
         if (user == null) return IdentityResult.Failed(new IdentityError { Description = "Invalid user ID." });
 
-        return await _userManager.ConfirmEmailAsync(user, token);
+        try
+        {
+            // Decode the token before using it
+            var decodedTokenBytes = WebEncoders.Base64UrlDecode(token);
+            var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
+
+            return await _userManager.ConfirmEmailAsync(user, decodedToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Token decoding error: {ex.Message}");
+            return IdentityResult.Failed(new IdentityError { Description = "Invalid token format." });
+        }
+
     }
 
     public async Task<string> GenerateJwtTokenAsync(IdentityUser user)

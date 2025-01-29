@@ -23,7 +23,7 @@ builder.Services.AddCors(options =>
     {
         policy.AllowAnyOrigin()  // Allow any origin (change for production)
               .AllowAnyMethod()  // Allow any HTTP method (GET, POST, etc.)
-              .AllowAnyHeader(); // Allow any headers
+              .AllowAnyHeader();  // Allow any headers
     });
 });
 
@@ -31,11 +31,11 @@ builder.Services.AddCors(options =>
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
     options.SignIn.RequireConfirmedEmail = true; // Enforce email confirmation
-    options.Password.RequiredLength = 6; // Minimum length for password
-    options.Password.RequireDigit = true; // Require at least one digit in password
+    options.Password.RequiredLength = 6;
+    options.Password.RequireDigit = true;
     options.User.RequireUniqueEmail = true;
 })
-.AddEntityFrameworkStores<ApplicationDbContext>() // Use EF for storing user data
+.AddEntityFrameworkStores<ApplicationDbContext>() // Use EF for storing user data 
 .AddDefaultTokenProviders(); // Default token providers for email confirmation and password reset
 
 builder.Services.AddSingleton<EmailService>();
@@ -43,6 +43,9 @@ builder.Services.AddScoped<RoleService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddTransient<BooksService>();
 
 // Register FluentEmail with Gmail SMTP provider
 builder.Services.AddFluentEmail(builder.Configuration["EmailSettings:SenderEmail"])
@@ -59,6 +62,8 @@ builder.Services.AddFluentEmail(builder.Configuration["EmailSettings:SenderEmail
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -69,7 +74,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
         };
+        // Disable redirection (handle 401 and 403 responses explicitly)
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = context =>
+            {
+                context.HandleResponse(); // Do not redirect
+                context.Response.StatusCode = 401; // Unauthorized
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsync("{\"message\":\"Unauthorized\"}");
+            }
+        };
+       
     });
+
+// Add authorization services
+builder.Services.AddAuthorization(options =>
+{
+    // Define a policy that allows either Identity or JWT authentication
+    options.AddPolicy("Jwt_Or_Identity", policy =>
+    {
+        //policy.AuthenticationSchemes.Add(IdentityConstants.ApplicationScheme);
+        policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
+        policy.RequireAuthenticatedUser(); // Require authentication from either scheme
+    });
+});
+
 
 // Register necessary services for API documentation and controllers
 builder.Services.AddEndpointsApiExplorer();
