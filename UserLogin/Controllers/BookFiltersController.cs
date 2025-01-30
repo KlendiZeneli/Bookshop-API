@@ -20,6 +20,13 @@ namespace UserLogin.Controllers
             _context = context;
         }
 
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllBooks()
+        {
+            var books = await _booksService.GetAllBooksAsync();
+            return Ok(books);
+        }
+
         // Get books by genre and subgenre
         [HttpGet("genre/")]
         public async Task<IActionResult> GetBooksByGenre([FromQuery] List<string> genre, [FromQuery] List<string> subgenre)
@@ -106,6 +113,13 @@ namespace UserLogin.Controllers
 
             await _booksService.AddBooksAsync(books);  // Using the new AddBooksAsync method
             return Ok(new { Message = "Books added successfully." });
+        }
+        [HttpGet("get-by-title/{title}")]
+        public async Task<IActionResult> GetBookByName(string title)
+        {
+            var book = await _booksService.GetBookByTitleAsync(title);
+            if (book == null) return NotFound("Book not found.");
+            return Ok(book);
         }
 
 

@@ -134,5 +134,14 @@ namespace UserLogin.Services
             await _context.SaveChangesAsync(); // Save changes asynchronously
         }
 
+        public async Task<List<Book>> GetAllBooksAsync()
+        {
+            return await _context.Books.ToListAsync();
+        }
+        public async Task<Book?> GetBookByTitleAsync(string title)
+        {
+            return await _context.Books.FirstOrDefaultAsync(b => b.Title == title);
+        }
+
     }
 }
