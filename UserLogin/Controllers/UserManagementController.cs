@@ -8,6 +8,7 @@ namespace UserLogin.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = "Jwt_Or_Identity")]
     [Authorize(Roles = "Admin")] // Only authenticated users can access
     public class UserManagementController : ControllerBase
     {

@@ -88,7 +88,10 @@ public class AuthService
 
     public async Task<string> GenerateJwtTokenAsync(IdentityUser user)
     {
-        return await _tokenService.CreateTokenAsync(user);
+
+        // Fetch the user's roles
+        var roles = await _userManager.GetRolesAsync(user);
+        return await _tokenService.CreateTokenAsync(user,roles);
     }
 
     public async Task<IdentityUser> GetUserByNameAsync(string username)

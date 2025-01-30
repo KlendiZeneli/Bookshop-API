@@ -27,16 +27,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add session support (in-memory session store by default)
-builder.Services.AddDistributedMemoryCache(); // Use memory cache for session data
-builder.Services.AddSession(options =>
-{
-    // Configure session options like idle timeout, cookie settings
-    options.Cookie.Name = ".UserLogin.Session";
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set the session timeout period
-    //options.Cookie.HttpOnly = true; // Make the session cookie accessible only to the server
-    options.Cookie.IsEssential = true; // Make the session cookie essential (needed for GDPR compliance)
-});
 
 // Add Identity with custom password policy and email confirmation
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
@@ -54,7 +44,6 @@ builder.Services.AddScoped<RoleService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddTransient<BooksService>();
 builder.Services.AddScoped<OrderService>();
@@ -110,6 +99,10 @@ builder.Services.AddAuthorization(options =>
         policy.AuthenticationSchemes.Add(JwtBearerDefaults.AuthenticationScheme);
         policy.RequireAuthenticatedUser(); // Require authentication from either scheme
     });
+
+    // Role-based policies
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
 });
 
 
@@ -163,7 +156,6 @@ if (app.Environment.IsDevelopment())
 // Enable CORS
 app.UseCors("AllowAllOrigins");// Apply the CORS policy globally
 
-app.UseSession();
 
 // Middleware setup for HTTPS, Authentication, and Authorization
 app.UseHttpsRedirection(); // Redirect HTTP requests to HTTPS

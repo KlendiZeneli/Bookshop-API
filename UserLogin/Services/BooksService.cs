@@ -143,5 +143,41 @@ namespace UserLogin.Services
             return await _context.Books.FirstOrDefaultAsync(b => b.Title == title);
         }
 
+        // 🔹 Search Books by Keywords (Updated for full structure)
+        public async Task<List<Book>> SearchBooksByKeywordsAsync(string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+                return new List<Book>();
+
+            return await _context.Books
+                .Where(b => b.Title.Contains(keyword) ||
+                            b.Author.Contains(keyword) ||
+                            b.Description.Contains(keyword) ||
+                            b.Genre.Contains(keyword) ||
+                            b.SubGenre.Contains(keyword) ||
+                            b.Publisher.Contains(keyword) ||
+                            b.Language.Contains(keyword))
+                .Select(b => new Book
+                {
+                    ISBN = b.ISBN,
+                    Title = b.Title,
+                    Description = b.Description,
+                    Language = b.Language,
+                    Author = b.Author,
+                    NoOfPages = b.NoOfPages,
+                    Price = b.Price,
+                    quantityInStock = b.quantityInStock,
+                    CoverURL = b.CoverURL,
+                    Genre = b.Genre,
+                    SubGenre = b.SubGenre,
+                    Publisher = b.Publisher,
+                    PublishingDate = b.PublishingDate,
+                    NewArrival = b.NewArrival,
+                    AwardWinner = b.AwardWinner,
+                    BestSeller = b.BestSeller
+                })
+                .ToListAsync();
+        }
+
     }
 }

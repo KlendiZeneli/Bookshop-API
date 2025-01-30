@@ -4,11 +4,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UserLogin.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace UserLogin.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Policy = "Jwt_Or_Identity")]
+    [Authorize(Roles = "Admin")]
     public class BookFiltersController : ControllerBase
     {
         private readonly BooksService _booksService;
@@ -120,6 +123,19 @@ namespace UserLogin.Controllers
             var book = await _booksService.GetBookByTitleAsync(title);
             if (book == null) return NotFound("Book not found.");
             return Ok(book);
+        }
+
+        // 🔹 Search Books by Keywords
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchBooks([FromQuery] string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                return BadRequest("Keyword cannot be empty.");
+            }
+
+            var books = await _booksService.SearchBooksByKeywordsAsync(keyword);
+            return Ok(books);
         }
 
 
