@@ -17,9 +17,9 @@ public class UserService
         return _userManager.Users.ToList();
     }
 
-    public async Task<bool> AssignRoleToUserAsync(string userId, string roleName)
+    public async Task<bool> AssignRoleToUserAsync(string userName, string roleName)
     {
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByNameAsync(userName);
         if (user == null) return false;
 
         var result = await _userManager.AddToRoleAsync(user, roleName);

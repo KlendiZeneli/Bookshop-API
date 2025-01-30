@@ -10,8 +10,8 @@ namespace UserLogin.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Policy = "Jwt_Or_Identity")]
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Policy = "Jwt_Or_Identity")]
+    //[Authorize(Roles = "Admin")]
     public class BookFiltersController : ControllerBase
     {
         private readonly BooksService _booksService;

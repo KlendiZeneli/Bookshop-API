@@ -8,8 +8,8 @@ namespace UserLogin.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Policy = "Jwt_Or_Identity")]
-    [Authorize(Roles = "Admin")] // Only authenticated users can access
+    //[Authorize(Policy = "Jwt_Or_Identity")]
+    //[Authorize(Roles = "Admin")] // Only authenticated users can access
     public class UserManagementController : ControllerBase
     {
         private readonly UserService _userService;
@@ -29,7 +29,7 @@ namespace UserLogin.Controllers
         [HttpPost("assign-role")]
         public async Task<IActionResult> AssignRoleToUser([FromBody] Assign_Remove_RoleModel model)
         {
-            var result = await _userService.AssignRoleToUserAsync(model.UserId, model.RoleName);
+            var result = await _userService.AssignRoleToUserAsync(model.UserName, model.RoleName);
             if (!result)
                 return BadRequest("Role assignment failed.");
             return Ok("Role assigned successfully.");
@@ -47,7 +47,7 @@ namespace UserLogin.Controllers
         [HttpPost("remove-role")]
         public async Task<IActionResult> RemoveRoleFromUser([FromBody] Assign_Remove_RoleModel model)
         {
-            var result = await _userService.RemoveRoleFromUserAsync(model.UserId, model.RoleName);
+            var result = await _userService.RemoveRoleFromUserAsync(model.UserName, model.RoleName);
             if (!result)
                 return BadRequest("Role removal failed.");
             return Ok("Role removed successfully.");

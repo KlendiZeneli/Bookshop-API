@@ -10,5 +10,6 @@
         public string? City { get; set; } // Required if ShippingMethod is "delivery"
         public string? Address { get; set; } // Required if ShippingMethod is "delivery"
         public string? SpecialComments { get; set; }
+        public List<OrderItemDto> Items { get; set; } // List of order items
     }
 }

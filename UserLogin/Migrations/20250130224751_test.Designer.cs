@@ -12,8 +12,8 @@ using UserLogin.Data;
 namespace UserLogin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250130214952_RemoveCart")]
-    partial class RemoveCart
+    [Migration("20250130224751_test")]
+    partial class test
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

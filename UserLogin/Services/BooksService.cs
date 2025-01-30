@@ -130,9 +130,21 @@ namespace UserLogin.Services
 
         public async Task AddBooksAsync(List<Book> books)
         {
-            _context.Books.AddRange(books); // Add multiple books
-            await _context.SaveChangesAsync(); // Save changes asynchronously
+            var existingTitles = await _context.Books
+                .Select(b => b.Title)
+                .ToListAsync(); // Fetch existing titles asynchronously
+
+            var newBooks = books
+                .Where(book => !existingTitles.Contains(book.Title))
+                .ToList(); // Filter out books already in the database
+
+            if (newBooks.Count > 0) // Insert only if there are new books
+            {
+                await _context.Books.AddRangeAsync(newBooks); // Asynchronous batch insert
+                await _context.SaveChangesAsync(); // Save changes asynchronously
+            }
         }
+
 
         public async Task<List<Book>> GetAllBooksAsync()
         {

@@ -14,31 +14,27 @@ namespace UserLogin.Controllers
         public OrderController(OrderService orderService)
         {
             _orderService = orderService;
-         
         }
 
-        //[HttpPost("complete")]
-        //public async Task<IActionResult> CompleteOrder([FromBody] OrderDetailsDto orderDetails)
-        //{
-        //    var userId = User.FindFirst("sub")?.Value; // Get userId from JWT token
-        //    var sessionId = HttpContext.Session.Id; // Get sessionId for guest users
+        [HttpPost("complete")]
+        public async Task<IActionResult> CompleteOrder([FromBody] OrderDetailsDto orderDetails)
+        {
+            if (orderDetails == null || orderDetails.Items == null || !orderDetails.Items.Any())
+            {
+                return BadRequest("Order must contain at least one item.");
+            }
 
-        //    var cart = await _cartService.GetCartAsync(userId != null ? int.Parse(userId) : (int?)null, sessionId);
+            try
+            {
+                var order = await _orderService.CreateOrderAsync(orderDetails);
+                return Ok(order);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
-        //    if (cart == null || !cart.Items.Any())
-        //    {
-        //        return BadRequest("Cart is empty.");
-        //    }
 
-        //    try
-        //    {
-        //        var order = await _orderService.CreateOrderAsync(cart, orderDetails);
-        //        return Ok(order);
-        //    }
-        //    catch (ArgumentException ex)
-        //    {
-        //        return BadRequest(ex.Message);
-        //    }
-        //}
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using UserLogin.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using UserLogin.Models;
 using UserLogin.Dtos;
 using UserLogin.Data;
 
@@ -13,48 +14,88 @@ namespace UserLogin.Data
             _context = context;
         }
 
-        //public async Task<Orders> CreateOrderAsync( OrderDetailsDto orderDetails)
-        //{
-        //    // Validate shipping method and related fields
-        //    if (orderDetails.ShippingMethod == "pickup" && string.IsNullOrEmpty(orderDetails.Store))
-        //    {
-        //        throw new ArgumentException("Store is required for pickup orders.");
-        //    }
+        public async Task<Orders> CreateOrderAsync(OrderDetailsDto orderDetails)
+        {
+            // Validate shipping method and required fields
+            if (orderDetails.ShippingMethod == "pickup" && string.IsNullOrEmpty(orderDetails.Store))
+            {
+                throw new ArgumentException("Store is required for pickup orders.");
+            }
 
-        //    if (orderDetails.ShippingMethod == "delivery" && (string.IsNullOrEmpty(orderDetails.City) || string.IsNullOrEmpty(orderDetails.Address)))
-        //    {
-        //        throw new ArgumentException("City and address are required for delivery orders.");
-        //    }
+            if (orderDetails.ShippingMethod == "delivery" && (string.IsNullOrEmpty(orderDetails.City) || string.IsNullOrEmpty(orderDetails.Address)))
+            {
+                throw new ArgumentException("City and address are required for delivery orders.");
+            }
 
-        //    // Calculate the total price of the order
-        //    decimal total = cart.Items.Sum(item => item.Book.Price * item.Quantity);
+            if (orderDetails.Items == null || !orderDetails.Items.Any())
+            {
+                throw new ArgumentException("Order must contain at least one item.");
+            }
 
-        //    var order = new Orders
-        //    {
-        //        Name = orderDetails.Name,
-        //        Phone = orderDetails.Phone,
-        //        Email = orderDetails.Email,
-        //        ShippingMethod = orderDetails.ShippingMethod,
-        //        Store = orderDetails.ShippingMethod == "pickup" ? orderDetails.Store : null,
-        //        City = orderDetails.ShippingMethod == "delivery" ? orderDetails.City : null,
-        //        Address = orderDetails.ShippingMethod == "delivery" ? orderDetails.Address : null,
-        //        SpecialComments = orderDetails.SpecialComments,
-        //        OrderDate = DateTime.UtcNow,
-        //        Total = total,
-        //        Items = cart.Items.Select(item => new OrderItems
-        //        {
-        //            ISBN = item.ISBN,
-        //            Quantity = item.Quantity,
-        //            Price = item.Book.Price // Store the price at the time of purchase
-        //        }).ToList(),
-        //        IsDelivered = false // Default to not delivered
-        //    };
+            // Fetch books from the database based on ISBNs in the order
+            var bookIsbns = orderDetails.Items.Select(i => i.ISBN).ToList();
+            var books = await _context.Books
+                                      .Where(b => bookIsbns.Contains(b.ISBN))
+                                      .ToListAsync();
 
-        //    _context.Orders.Add(order);
-        //    _context.Carts.Remove(cart); // Empty the cart
-        //    await _context.SaveChangesAsync();
+            if (books.Count != bookIsbns.Count)
+            {
+                throw new ArgumentException("Some books in the order do not exist in the database.");
+            }
 
-        //    return order;
-        //}
+            // Validate stock and calculate total price
+            decimal total = 0;
+            List<OrderItems> orderItems = new List<OrderItems>();
+
+            foreach (var item in orderDetails.Items)
+            {
+                var book = books.FirstOrDefault(b => b.ISBN == item.ISBN);
+                if (book == null)
+                {
+                    throw new ArgumentException($"Book with ISBN {item.ISBN} does not exist.");
+                }
+
+                if (book.quantityInStock < item.Quantity)
+                {
+                    throw new ArgumentException($"Not enough stock for '{book.Title}'. Available: {book.quantityInStock}, Requested: {item.Quantity}");
+                }
+
+                // Reduce stock in the database
+                book.quantityInStock -= item.Quantity;
+
+                // Use database price instead of the frontend-submitted price
+                decimal itemPrice = book.Price;
+                total += itemPrice * item.Quantity;
+
+                orderItems.Add(new OrderItems
+                {
+                    ISBN = item.ISBN,
+                    Book = book,
+                    Quantity = item.Quantity,
+                    Price = itemPrice // Use correct price from DB
+                });
+            }
+
+            var order = new Orders
+            {
+                Name = orderDetails.Name,
+                Phone = orderDetails.Phone,
+                Email = orderDetails.Email,
+                ShippingMethod = orderDetails.ShippingMethod,
+                Store = orderDetails.ShippingMethod == "pickup" ? orderDetails.Store : null,
+                City = orderDetails.ShippingMethod == "delivery" ? orderDetails.City : null,
+                Address = orderDetails.ShippingMethod == "delivery" ? orderDetails.Address : null,
+                SpecialComments = orderDetails.SpecialComments,
+                OrderDate = DateTime.UtcNow,
+                Total = total,
+                Items = orderItems,
+                IsDelivered = false
+            };
+
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            return order;
+        }
     }
 }
