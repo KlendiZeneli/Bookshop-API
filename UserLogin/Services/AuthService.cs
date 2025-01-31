@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using System.Threading.Tasks;
@@ -84,6 +84,28 @@ public class AuthService
             return IdentityResult.Failed(new IdentityError { Description = "Invalid token format." });
         }
 
+    }
+
+    public async Task<bool> GenerateAndSendConfirmationEmailAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) return false;
+
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var tokenBytes = Encoding.UTF8.GetBytes(token);
+        var encodedToken = WebEncoders.Base64UrlEncode(tokenBytes);
+        var confirmationUrl = $"https://localhost:7221/api/Auth/confirm-email?userId={user.Id}&token={encodedToken}";
+
+        var emailBody = $@"
+                <p>Hello <b>{user.UserName}</b>,</p>
+                <p>Your account details have been updated. Please confirm your email by clicking the link below:</p>
+                <a href='{confirmationUrl}' style='background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; border-radius: 5px;'>Confirm Email</a>
+                <p>If the button doesn't work, you can also confirm your email by clicking the following link:</p>
+                <p><a href='{confirmationUrl}'>{confirmationUrl}</a></p>
+                <p>Best Regards,<br/>Your Company Team</p>";
+
+        await _emailService.SendEmailAsync(user.Email, "Confirm Your Email", emailBody, true);
+        return true;
     }
 
     public async Task<string> GenerateJwtTokenAsync(IdentityUser user)
